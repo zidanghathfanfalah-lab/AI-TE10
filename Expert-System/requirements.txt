@@ -1,0 +1,37 @@
+# Band SDK — Anthropic adapter untuk semua agent runners
+band-sdk[anthropic]>=1.0.0
+
+# RAG — LlamaIndex + ChromaDB
+llama-index-core>=0.12.0
+llama-index-vector-stores-chroma>=0.4.0
+llama-index-readers-file>=0.4.0
+llama-index-embeddings-openai>=0.3.0
+chromadb>=0.5.0
+
+# LLM providers (OpenAI-compat: Featherless AI + AIML API)
+openai>=1.58.0
+
+# Anthropic (untuk fallback langsung + eskalasi P1 via AIML)
+anthropic>=0.40.0
+
+# API & web
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic>=2.10.0
+pydantic-settings>=2.7.0
+httpx>=0.28.0
+
+# Database
+redis[hiredis]>=5.2.0
+sqlalchemy[asyncio]>=2.0.36
+asyncpg>=0.30.0
+alembic>=1.14.0
+
+# Utils
+python-dotenv>=1.0.1
+structlog>=24.4.0
+
+# Testing
+pytest>=8.3.0
+pytest-asyncio>=0.24.0
+pytest-cov>=6.0.0
