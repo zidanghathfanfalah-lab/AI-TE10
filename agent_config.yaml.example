@@ -1,0 +1,22 @@
+# ==============================================================================
+# SATRIA — Band Agent Configuration File Example
+# 
+# Copy this file to agent_config.yaml and fill in the values.
+# Register each agent as an "External Agent" in the Band dashboard at
+# https://app.band.ai/agents, then paste their UUID (agent_id) and API key below.
+# ==============================================================================
+
+# 1. Anamnesis Agent
+anamnesis:
+  agent_id: "<your-anamnesis-agent-uuid>"
+  api_key: "<your-anamnesis-api-key>"
+
+# 2. Clinical Expert Agent
+clinical-expert:
+  agent_id: "<your-clinical-expert-agent-uuid>"
+  api_key: "<your-clinical-expert-api-key>"
+
+# 3. Compliance Auditor Agent
+compliance-auditor:
+  agent_id: "<your-compliance-auditor-agent-uuid>"
+  api_key: "<your-compliance-auditor-api-key>"

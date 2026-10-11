@@ -1,60 +1,66 @@
-# Environment variables
+# Environment
 .env
-.env.local
-.env.production
-
-# Streamlit secrets (IMPORTANT: Don't commit secrets!)
-.streamlit/secrets.toml
+.env.*
+!.env.example
 
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
+*.pyo
+*.pyd
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
 *.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+/lib/
+/lib64/
+venv/
+.venv/
+ENV/
+env/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
 
 # IDE
-.vscode/
 .idea/
+.vscode/
 *.swp
 *.swo
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite3
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Logs
-logs/
-*.log
+# Secrets / Docs internal
+PRD_Sistem_SATRIA_Comprehensive.pdf
 
-# Data files (uncomment data/ if you want to keep data in repo)
-# data/
-uploads/
-chat_history/
-*.db
-*.sqlite
-*.sqlite3
+# Band credentials — jangan commit!
+agent_config.yaml
 
-# Temporary files
-*.tmp
-*.bak
-*.backup
+# ChromaDB data — terlalu besar untuk git
+data/
 
-# Temporary files
-*.tmp
-*.temp
+node_modules
+
+# PNPK PDF files — proprietary
+knowledge_base/documents/*.pdf
+knowledge_base/documents/*.txt

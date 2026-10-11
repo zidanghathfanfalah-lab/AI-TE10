@@ -1,529 +1,273 @@
-# 🤖 Chatbot Pembelajaran Algoritma
+# SATRIA — Integrated Anamnesis and Referral Assistant System
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://chatbotv2-jeu2cve8kghtl949f593rl.streamlit.app/)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+Multi-Agent Medical Triage System via Band Architecture for early detection of endemic tropical diseases in Indonesia (Dengue, Typhoid, Malaria, ARI) and real-time optimization of healthcare facility queue workloads.
 
-Chatbot interaktif berbasis web untuk membantu mahasiswa pemula memahami konsep algoritma dan cara berpikir komputasional. Dibangun dengan Streamlit dan terintegrasi dengan Google Gemini AI.
+> **Why was SATRIA built?** Read [PHILOSOPHY.md](./PHILOSOPHY.md) — about the irony of the Indonesian healthcare system and why patients should be treated as customers.
 
-## 🌐 Demo
+## Architecture
 
-**Live Demo:** [https://alprobotv2.streamlit.app/](https://alprobotv2.streamlit.app/)
+```
+Patient (Chat UI)
+      │
+      ▼
+┌─────────────────┐
+│ Anamnesis Agent │  ──► patient_context (Redis / Band)
+└─────────────────┘
+      │
+      ▼
+┌─────────────────┐
+│ Clinical Expert │  ──► diagnosis_draft, triage_result, routing_result
+└─────────────────┘
+      │
+      ▼
+┌───────────────────┐
+│Compliance Auditor │  ──► SOAP PMK 24/2022 -> PostgreSQL (RME)
+└───────────────────┘
+```
 
-> **Note:** Demo menggunakan Google Gemini API. Klik langsung untuk mencoba!
+### Core Agents
 
-## ✨ Fitur Lengkap
+| Agent | Responsibility |
+|------|---------------|
+| **Anamnesis Agent** | Direct natural chat with patient, gathering complaints, pain scale, and GPS location. Recruits specialist agents to the room once interview is complete. |
+| **Clinical Expert Agent** | Clinical reasoning backbone using dynamic RAG (ChromaDB + LlamaIndex) on Kemenkes guidelines. Directs triage (P1/P2/P3) and handles fasyankes routing with queue reservation. |
+| **Compliance Auditor Agent** | Assists the physician by checking drug interactions, generating standard SOAP drafts (PMK 24/2022), requesting doctor approval (/approve), and committing locked RME to PostgreSQL. |
+| **Ingestion Agent (Satelite)** | Run-once or on-demand background worker that indexes Kemenkes PNPK documents into ChromaDB via LlamaIndex. |
 
-### 💬 Chat Interface
-- **Percakapan Interaktif**: Chat real-time dengan AI chatbot
-- **Guided Learning**: Panduan step-by-step, bukan jawaban langsung
-- **Deteksi Jenis Pertanyaan**: Otomatis mendeteksi apakah pertanyaan tentang konsep, kode, atau debugging
-- **Smart Response**: Response yang disesuaikan dengan jenis pertanyaan
-- **Conversation Context**: Chatbot mengingat 5 pesan terakhir untuk konteks
+## Tech Stack
 
-### 🔬 Algorithm Simulator
-- **7 Algoritma Terintegrasi:**
-  - **Sorting:** Bubble Sort, Selection Sort, Insertion Sort
-  - **Searching:** Binary Search, Linear Search
-  - **Recursive:** Factorial, Fibonacci
-- **Step-by-Step Execution**: Lihat setiap langkah algoritma secara detail
-- **Visual Trace**: Visualisasi perubahan array per step
-- **Complexity Analysis**: Time & space complexity untuk setiap algoritma
-- **Interactive Widget**: Jalankan simulasi langsung dari sidebar
+- **Language**: Python 3.12+
+- **AI**: Anthropic API (`claude-sonnet-4-6`)
+- **Agent Communication**: `band-sdk` (asynchronous, context-sharing via chat room)
+- **API**: FastAPI + Uvicorn
+- **Database**: PostgreSQL 16 (permanent data store) + Redis 7 (session cache between agents)
+- **ORM**: SQLAlchemy async + asyncpg
+- **Migration**: Alembic
+- **Frontend**: Astro (static) + Tailwind CSS + nginx
+- **Containerization**: Docker Compose
+- **Testing**: Pytest
 
-### 📤 Code Analysis
-- **Upload File Python**: Support .py dan .txt (max 1MB)
-- **Syntax Validation**: Deteksi error syntax otomatis
-- **Algorithm Detection**: Identifikasi algoritma yang digunakan
-- **Complexity Detection**: Deteksi time complexity (O(n), O(log n), dll)
-- **Code Structure Analysis**: Functions, classes, loops, conditions
-- **Security Check**: Validasi kode berbahaya (imports, file ops, dll)
+## Directory Structure
 
-### 📚 Learning Topics
-- **Kategori Terstruktur:**
-  - Dasar-dasar Algoritma
-  - Sorting & Searching
-  - Struktur Data Dasar
-  - Rekursi & Dynamic Programming
-  - Graph Algorithms
-- **Quick Topic Selection**: Pilih topik dari sidebar untuk fokus pembelajaran
+```
+bandrme/
+├── agents/             # 3 Band agents and runners
+│   ├── runners/        # Independent agent executable scripts
+│   └── record.py       # Record synchronization helpers
+├── band/               # Band Protocol configurations and handles
+├── knowledge_base/     # Kemenkes PNPK — warning signs and references
+├── models/             # Shared Pydantic schemas and database wrappers
+├── api/                # FastAPI application — routes /patient and /doctor
+├── db/
+│   ├── engine.py       # SQLAlchemy async database connection
+│   ├── models.py       # 23 ORM models (see Database Schema)
+│   ├── session_store.py# Redis session manager
+│   └── seed/           # Seed datasets and import scripts
+├── alembic/            # Database schema migration files
+├── config/             # Environment settings parser
+├── frontend/           # Astro web app source code
+└── tests/              # Test suites
+```
 
-### 🔐 Admin Panel
-- **Authentication**: Login aman dengan streamlit-authenticator v0.4.2
-- **API Key Management**: Kelola Gemini dan OpenAI API keys
-- **Model Selection**: Pilih model aktif dan fallback
-- **Rate Limit Configuration**: Atur limit per menit/jam
-- **System Prompt Editor**: Customize behavior chatbot
-- **Analytics Dashboard**: 
-  - Total chat messages
-  - Average response time
-  - Active users
-  - Daily usage charts
+## Setup
 
-### ⚡ Rate Limiting
-- **Multi-Level Protection:**
-  - Global: 60 requests/minute
-  - Per-user per-minute: 10 requests
-  - Per-user per-hour: 100 requests
-- **Token Bucket Algorithm**: Smooth rate limiting
-- **User-Friendly Messages**: Clear feedback saat limit tercapai
+There are two ways to run SATRIA: **Full Docker** (for instant testing) and **Hybrid Mode** (highly recommended to save system resources).
 
-### 🎓 Educational Features
-- **Socratic Method**: Chatbot bertanya balik untuk merangsang berpikir
-- **No Direct Answers**: Tidak memberikan jawaban langsung untuk tugas/ujian
-- **Ethical Guidelines**: Disclaimer etika pembelajaran di header
-- **Progressive Learning**: Dari konsep dasar ke advanced
+---
 
-## 🚀 Quick Start
+### Method 1: Full Docker Compose (All Services in Container)
 
-### Persyaratan Sistem
-
-- Python 3.10 atau lebih baru
-- pip (package manager Python)
-- Git
-
-### Setup Virtual Environment (Direkomendasikan)
-
-Untuk menghindari konflik dependencies dengan proyek Python lainnya, gunakan virtual environment:
+Best for quick evaluation without local environment setup.
 
 ```bash
-# Buat virtual environment
-python -m venv venv
-
-# Aktifkan virtual environment
-# Untuk macOS/Linux:
-source venv/bin/activate
-# Untuk Windows:
-# venv\Scripts\activate
-
-# Verifikasi virtual environment aktif
-### Persyaratan Sistem
-
-- Python 3.10 atau lebih baru
-- pip (package manager Python)
-- Git
-- API Key Google Gemini (gratis dari [Google AI Studio](https://aistudio.google.com/app/apikey))
-
-### Instalasi Lokal
-
-1. **Clone repository**
-   ```bash
-   git clone https://github.com/arifsetwn/chatbot.v2.git
-   cd chatbot.v2
-   ```
-
-2. **Setup virtual environment** (direkomendasikan)
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # macOS/Linux
-   # atau
-   # venv\Scripts\activate   # Windows
-   ```
-
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Konfigurasi environment**
-   ```bash
-   # Copy .env example (jika ada)
-   cp .env.example .env
-   
-   # Atau buat file .env baru
-   nano .env
-   ```
-   
-   Minimal configuration:
-   ```env
-   GEMINI_API_KEY=your_gemini_api_key_here
-   ADMIN_USERNAME=admin
-   ADMIN_PASSWORD=change_this_password
-   ACTIVE_MODEL=gemini
-   GEMINI_MODEL=gemini-2.0-flash
-   ```
-
-5. **Jalankan aplikasi**
-   ```bash
-   streamlit run app.py
-   ```
-
-Aplikasi akan berjalan di `http://localhost:8501`
-
-### Mendapatkan API Key
-
-#### Google Gemini (Gratis)
-1. Kunjungi [Google AI Studio](https://aistudio.google.com/app/apikey)
-2. Sign in dengan Google account
-3. Click "Create API Key" atau "Get API Key"
-4. Copy API key dan paste ke `.env` file
-
-#### OpenAI (Opsional)
-1. Kunjungi [OpenAI Platform](https://platform.openai.com/api-keys)
-2. Create account dan add billing
-3. Generate new API key
-4. Copy dan paste ke `.env` file
-
-> **Note:** Untuk demo/development, cukup gunakan Gemini API (gratis).
-
-## ⚙️ Konfigurasi
-
-### Environment Variables
-
-File `.env` konfigurasi lengkap:
-
-```env
-# API Keys
-GEMINI_API_KEY=your_gemini_api_key_here
-GOOGLE_API_KEY=your_gemini_api_key_here  # Alias untuk GEMINI_API_KEY
-
-# Optional: OpenAI (untuk fallback)
-# OPENAI_API_KEY=your_openai_api_key_here
-
-# Application Settings
-APP_NAME=Chatbot Pembelajaran Algoritma
-APP_VERSION=1.0.0
-
-# Security Settings
-SECRET_KEY=your_random_secret_key
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=change_this_secure_password
-
-# Rate Limiting
-RATE_LIMIT_PER_MINUTE=10
-RATE_LIMIT_PER_HOUR=100
-GLOBAL_RATE_LIMIT=60
-
-# Model Settings
-ACTIVE_MODEL=gemini
-DEFAULT_MODEL=gemini
-GEMINI_MODEL=gemini-2.0-flash
-
-# Optional: Fallback model
-# FALLBACK_MODEL=openai
-# OPENAI_MODEL=gpt-3.5-turbo
-
-# File Upload Settings
-MAX_FILE_SIZE_MB=1
-ALLOWED_FILE_TYPES=py,txt
-
-# Logging
-LOG_LEVEL=INFO
-LOG_FILE=logs/chatbot.log
-
-# Server Settings
-HOST=0.0.0.0
-PORT=8501
-```
-
-### Admin Access
-
-**Default credentials:**
-- Username: `admin`
-- Password: `admin123`
-
-> ⚠️ **PENTING:** Segera ubah password default di file `.env` sebelum deployment!
-
-## 📖 Cara Penggunaan
-
-### 💬 Untuk Mahasiswa
-
-1. **Buka halaman Chat**
-   - Klik menu "Chat" di sidebar
-   
-2. **Pilih topik pembelajaran** (opsional)
-   - Expand kategori di sidebar
-   - Klik topik yang ingin dipelajari
-   
-3. **Mulai bertanya**
-   - Ketik pertanyaan di chat input
-   - Contoh: "Jelaskan cara kerja binary search"
-   
-4. **Upload kode untuk review** (opsional)
-   - Klik "Upload Kode" di sidebar
-   - Pilih file .py atau .txt (max 1MB)
-   - Tanyakan tentang kode yang diupload
-   
-5. **Coba Algorithm Simulator**
-   - Pilih algoritma di sidebar
-   - Masukkan input data
-   - Klik "Jalankan Simulasi"
-   - Lihat step-by-step execution
-
-### 🔧 Untuk Dosen/Admin
-
-1. **Akses Admin Panel**
-   - Klik menu "Admin" di sidebar
-   - Login dengan credentials
-   
-2. **Kelola API Keys**
-   - View/edit Gemini & OpenAI API keys
-   - Test koneksi API
-   
-3. **Pilih Model**
-   - Pilih model aktif (Gemini/OpenAI)
-   - Set fallback model
-   
-4. **Atur Rate Limiting**
-   - Set limit per menit/jam
-   - Monitor usage
-   
-5. **Edit System Prompt**
-   - Customize chatbot behavior
-   - Set learning guidelines
-   
-6. **Monitor Analytics**
-   - Lihat total messages
-   - Average response time
-   - Daily usage charts
-
-## 🏗️ Struktur Proyek
-
-```
-chatbot.v2/
-├── app.py                          # Entry point (redirects to Chat)
-├── pages/
-│   ├── 1_Chat.py                  # Chat interface with LLM
-│   └── 2_Admin.py                 # Admin panel
-├── utils/
-│   ├── llm/
-│   │   ├── __init__.py
-│   │   ├── gemini_client.py       # Google Gemini wrapper
-│   │   ├── openai_client.py       # OpenAI wrapper
-│   │   └── llm_manager.py         # Unified LLM manager
-│   ├── algorithm_simulator.py     # Algorithm step-by-step simulator
-│   ├── question_detector.py       # Question type detection
-│   ├── code_analyzer.py           # Python code analysis
-│   └── rate_limiter.py            # Rate limiting (token bucket)
-├── data/
-│   └── system_prompt.txt          # Chatbot system prompt
-├── .streamlit/
-│   ├── config.toml                # Streamlit configuration
-│   └── secrets.toml.example       # Secrets template
-├── docs/
-│   ├── API_KEY_SETUP.md           # API key setup guide
-│   ├── LLM_INTEGRATION.md         # LLM integration docs
-│   ├── ALGORITHM_SIMULATOR_USAGE.md  # Simulator guide
-│   ├── DEPLOYMENT_GUIDE.md        # Streamlit Cloud deployment
-│   └── PRE_DEPLOYMENT_CHECKLIST.md   # Deployment checklist
-├── requirements.txt               # Python dependencies
-├── requirements-minimal.txt       # Minimal deps (for deployment)
-├── packages.txt                   # System packages (for Streamlit Cloud)
-├── .env                          # Environment variables (gitignored)
-├── .gitignore                    # Git ignore rules
-└── README.md                     # This file
-```
-
-## 🛠️ Tech Stack
-
-### Frontend
-- **Streamlit** v1.28+ - Web framework
-- **Streamlit-authenticator** v0.4.2 - Authentication
-
-### AI/LLM Integration
-- **Google Gemini API** v0.3+ - Primary LLM (gemini-2.0-flash)
-- **OpenAI API** v1.0+ - Fallback LLM (optional)
-
-### Data Processing
-- **Pandas** v2.0+ - Data manipulation
-- **NumPy** v1.24+ - Numerical operations
-
-### Security & Utilities
-- **Cryptography** v41.0+ - Encryption
-- **python-dotenv** v1.0+ - Environment management
-- **PyYAML** v6.0+ - Configuration
-
-### Code Analysis
-- **AST (built-in)** - Python code parsing
-- **Regular expressions** - Pattern matching
-
-## 📚 Dokumentasi
-
-Dokumentasi lengkap tersedia di folder `docs/`:
-
-- **[API_KEY_SETUP.md](docs/API_KEY_SETUP.md)** - Panduan mendapatkan API keys
-- **[LLM_INTEGRATION.md](docs/LLM_INTEGRATION.md)** - Technical docs LLM integration
-- **[ALGORITHM_SIMULATOR_USAGE.md](ALGORITHM_SIMULATOR_USAGE.md)** - Cara menggunakan simulator
-- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Deploy ke Streamlit Cloud
-- **[PRE_DEPLOYMENT_CHECKLIST.md](PRE_DEPLOYMENT_CHECKLIST.md)** - Checklist sebelum deploy
-- **[FIX_DEPLOYMENT_ERROR.md](FIX_DEPLOYMENT_ERROR.md)** - Troubleshooting deployment
-
-## 🔧 Development
-
-### Setup Development Environment
-
-```bash
-# Clone repository
-git clone https://github.com/arifsetwn/chatbot.v2.git
-cd chatbot.v2
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # macOS/Linux
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Setup environment
+# 1. Configure environment
 cp .env.example .env
-# Edit .env with your API keys
+# Edit .env and fill in the required API keys
 
-# Run in development mode
-streamlit run app.py
+# 2. Run all services via Docker
+docker compose up --build
 ```
-
-### Testing Locally
-
-```bash
-# Test algorithm simulator
-python3 demo_algorithm_simulator.py
-
-# Test LLM integration
-python3 -c "from utils.llm.gemini_client import GeminiClient; print('OK')"
-
-# Test imports
-python3 -c "from utils.algorithm_simulator import AlgorithmSimulator; print('OK')"
-```
-
-### Running Tests
-
-```bash
-# Install dev dependencies
-pip install pytest black flake8
-
-# Run tests
-pytest tests/
-
-# Code formatting
-black .
-
-# Linting
-flake8 .
-```
-
-## 🚀 Deployment
-
-### Deploy ke Streamlit Cloud
-
-1. **Push ke GitHub:**
-   ```bash
-   git add .
-   git commit -m "Ready for deployment"
-   git push origin main
-   ```
-
-2. **Deploy di Streamlit Cloud:**
-   - Login ke [Streamlit Cloud](https://streamlit.io/cloud)
-   - New app → Pilih repository
-   - Main file: `app.py`
-   - Add secrets di Advanced settings
-
-3. **Verifikasi deployment:**
-   - Check app URL
-   - Test functionality
-   - Monitor logs
-
-**📖 Panduan lengkap:** [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
-
-### Environment Variables di Streamlit Cloud
-
-Tambahkan di Streamlit Cloud Settings → Secrets:
-
-```toml
-GEMINI_API_KEY = "your_api_key_here"
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "secure_password"
-ACTIVE_MODEL = "gemini"
-GEMINI_MODEL = "gemini-2.0-flash"
-RATE_LIMIT_PER_MINUTE = "10"
-RATE_LIMIT_PER_HOUR = "100"
-```
-
-## 🤝 Contributing
-
-Kontribusi sangat diterima! Berikut cara berkontribusi:
-
-1. Fork repository
-2. Create feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open Pull Request
-
-### Development Guidelines
-
-- Follow PEP 8 style guide
-- Add docstrings untuk functions/classes
-- Update dokumentasi jika ada perubahan API
-- Test perubahan sebelum commit
-- Write clear commit messages
-
-## 📝 Changelog
-
-### v1.0.0 (Oktober 2025)
-- ✅ Initial release
-- ✅ Chat interface dengan Gemini AI
-- ✅ Algorithm simulator (7 algoritma)
-- ✅ Code analyzer & syntax checker
-- ✅ Admin panel dengan authentication
-- ✅ Rate limiting system
-- ✅ Question type detection
-- ✅ Deployment ke Streamlit Cloud
-
-## 🐛 Known Issues
-
-- Fibonacci simulator slow untuk n>15 (exponential recursion)
-- Large array (>100 elements) generate banyak steps di simulator
-- OpenAI fallback requires billing setup
-
-## 🔮 Roadmap
-
-### Phase 2 (Q1 2026)
-- [ ] Add more algorithms (Quick Sort, Merge Sort, DFS/BFS)
-- [ ] Graphical visualization (charts, flowcharts)
-- [ ] User progress tracking
-- [ ] Quiz & assessment feature
-- [ ] Export simulation to PDF
-
-### Phase 3 (Q2 2026)
-- [ ] Multi-language support (EN/ID)
-- [ ] LMS integration (Moodle API)
-- [ ] Collaborative learning features
-- [ ] Mobile app version
-- [ ] Voice interaction
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## � Authors
-
-- **Arif Setiawan** - Initial work - [@arifsetwn](https://github.com/arifsetwn)
-
-## 🙏 Acknowledgments
-
-- Streamlit team untuk amazing framework
-- Google untuk Gemini API
-- OpenAI untuk GPT models
-- Open source community
-
-## 📞 Support
-
-- **GitHub Issues:** [Create an issue](https://github.com/arifsetwn/chatbot.v2/issues)
-- **Demo:** [https://chatbotv2-jeu2cve8kghtl949f593rl.streamlit.app/](https://chatbotv2-jeu2cve8kghtl949f593rl.streamlit.app/)
-
-## 🌟 Star History
-
-Jika project ini membantu, berikan ⭐ di GitHub!
+*   **Backend API & Docs:** `http://localhost:8000/docs`
+*   **Frontend Astro:** `http://localhost:4321`
 
 ---
 
-**Made with ❤️ for students learning algorithms**
+### Method 2: Hybrid Mode (Highly Recommended — Saves Power & RAM)
 
-**Last Updated:** 19 Oktober 2025
+Runs only the database (`db`) and cache (`redis`) services in Docker, while running the application, RAG, and agents directly on the host machine using a virtual environment (`.venv`).
 
+#### 1. Run Database & Cache in Docker
+```bash
+docker compose up -d db redis
+```
+
+#### 2. Setup Local Virtual Environment
+```bash
+# Ensure you are using Python 3.12+
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+#### 3. Run Migrations & RAG Ingestion
+```bash
+# Apply schema migrations and seed initial data to PostgreSQL
+PYTHONPATH=. python db/seed/scripts/seed_all.py
+
+# Index medical PNPK documents to local ChromaDB
+PYTHONPATH=. python agents/runners/ingestion_runner.py
+```
+
+#### 4. Run Backend & Frontend
+*   **FastAPI Backend (Terminal 1):**
+    ```bash
+    PYTHONPATH=. python -m uvicorn api.main:app --reload --port 8000
+    ```
+*   **Astro Frontend (Terminal 2):**
+    ```bash
+    cd frontend
+    npm install
+    npm run dev
+    ```
+
+#### 5. Run Band Agent Runners (Terminal 3, 4, 5)
+Run each agent runner script separately using the credentials from your environment or `agent_config.yaml`:
+```bash
+# Anamnesis Agent
+PYTHONPATH=. python agents/runners/anamnesis_runner.py
+
+# Clinical Expert Agent
+PYTHONPATH=. python agents/runners/clinical_expert_runner.py
+
+# Compliance Auditor Agent
+PYTHONPATH=. python agents/runners/compliance_auditor_runner.py
+```
+
+## Database Schema
+
+SATRIA uses PostgreSQL as its primary database with a structure closely resembling HL7 FHIR (the format used by Satu Sehat), making future integration with Satu Sehat seamless.
+
+Total: **23 tables**, **22 enum types**, grouped into 6 domains.
+
+### Group 1 — Administrative Areas (4 tables)
+
+Hierarchy: Province -> Regency/City -> District -> Village
+
+```
+wilayah_provinsi (34 rows — seed provided)
+wilayah_kabupaten_kota (514 rows — via import_wilayah.py)
+wilayah_kecamatan (~7,000 rows — via import_wilayah.py)
+wilayah_kelurahan_desa (~83,000 rows — via import_wilayah.py)
+```
+
+Key columns: `kode_bps` (standard BPS code), hierarchical foreign keys.
 
 ---
 
-**Dikembangkan oleh:** Tim Pengembang Chatbot PTI UMS
-**Tanggal:** Oktober 2025
-**Versi:** 1.0.0
+### Group 2 — Healthcare Facilities (6 tables) — maps to FHIR Organization + Location
+
+```
+organizations          — Hospitals, Puskesmas, Clinics, Pharmacies, Labs, etc.
+locations              — GPS Coordinates + street addresses per facility
+igd_capacities         — Real-time IGD bed availability (updated by agents)
+queues                 — Daily queues per service unit (UNIQUE: org+unit+date)
+operational_schedules  — Opening schedules per day
+facility_services      — List of services available at the facility
+```
+
+Satu Sehat columns: `satu_sehat_org_id`, `satu_sehat_location_id`.
+
+---
+
+### Group 3 — Patients & Users (3 tables) — maps to FHIR Patient + Practitioner
+
+```
+patients           — Patient demographic data (NIK, BPJS, GPS home location)
+users              — Doctors, nurses, admins (with STR & SIP credentials)
+user_organizations — Many-to-many relationship mapping practitioners to facilities
+```
+
+---
+
+### Group 4 — Encounters & RME (7 tables) — maps to FHIR Encounter + Clinical Resources
+
+```
+encounters             — Patient visit session (outpatient/inpatient/IGD/telemedicine)
+conditions             — Diagnoses: ICD-10, AI-generated vs physician-confirmed
+observations           — Vital signs & symptoms: LOINC codes, numeric values, abnormal flags
+medication_statements  — Prescriptions and active medications (FHIR MedicationStatement)
+allergies              — Active patient allergies (FHIR AllergyIntolerance)
+medical_records        — Final RME in SOAP format (PMK 24/2022), immutable after locking
+referrals              — Referral letters between healthcare facilities
+```
+
+RME uses the standard SOAP format:
+- `S` (Subjective) — patient complaints reported during anamnesis
+- `O` (Objective) — vital signs and physical examinations (stored in JSONB)
+- `A` (Assessment) — final diagnosis verified by the doctor
+- `P` (Plan) — actions, prescriptions, and referrals
+
+---
+
+### Group 5 — Band System Internals (4 tables)
+
+```
+sessions          — Active patient pipeline session (FK to patients + encounters)
+band_events       — Audit trail of events passing through Band channels (BIGSERIAL)
+agent_executions  — LLM call tracking logs: token usage, latency, and execution status
+queue_slots       — Queue slots booked by routing tools
+```
+
+`band_events` and `agent_executions` utilize `BIGSERIAL` to support high log volumes.
+
+---
+
+### Group 6 — Clinical Reference Masters (3 tables)
+
+```
+icd10_codes    — ~60 relevant ICD-10 codes (seed provided)
+loinc_codes    — ~35 LOINC codes for vital signs and symptoms (seed provided)
+service_types  — Master list of service units / polyclinics
+```
+
+---
+
+### Redis Session Store
+
+In addition to PostgreSQL, active patient session states are cached in Redis as a hash:
+
+```
+Key: satria:session:{session_id}   TTL: 1 hour
+Fields:
+  chat_history      — conversation logs with anamnesis
+  patient_context   — patient demographics & complaints from Anamnesis Agent
+  diagnosis_draft   — technical diagnosis hypotheses from Clinical Expert
+  triage_result     — calculated triage from Clinical Expert
+  routing_result    — queue reservation details from Clinical Expert
+```
+
+Redis data is synchronized into the permanent PostgreSQL `sessions` and `medical_records` tables when the physician approves and locks the encounter.
+
+---
+
+### Seed Data
+
+| File | Content | Import Method |
+|------|-----|-----------|
+| `db/seed/provinces.sql` | 34 Indonesian provinces | `psql $DB < provinces.sql` |
+| `db/seed/icd10_subset.sql` | ~60 subset ICD-10 codes | `psql $DB < icd10_subset.sql` |
+| `db/seed/loinc_subset.sql` | ~35 subset LOINC codes | `psql $DB < loinc_subset.sql` |
+| `db/seed/scripts/import_wilayah.py` | ~83,000 village data from BPS | `python import_wilayah.py` |
+| `db/seed/scripts/import_fasyankes.py` | RS Class A/B & capital Puskesmas | `python import_fasyankes.py` |
+
+## Compliance
+
+- **PMK No. 24 of 2022** — RME SOAP structure, immutable once locked by the doctor (`is_locked=True`)
+- **HL7 FHIR** — Database schema maps directly to FHIR resources (Patient, Encounter, Condition, Observation, MedicationStatement, AllergyIntolerance), ready for Satu Sehat integration
+- **CIA Triad** — Raw AI diagnostic hypotheses are kept inside internal Band logs and never exposed directly to patients without doctor approval
+
+## KPIs
+
+- Accuracy of identifying P1 warning signs (plasma leakage in Dengue, low SpO2 in ARI)
+- Reduced patient waiting times at healthcare facilities for P3 triage cases
+- Time efficiency of physical doctor anamnesis sessions
